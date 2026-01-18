@@ -1,0 +1,56 @@
+* * PRACTICE 6:
+* An airline company’s technical service depot worker is responsible for ensuring that they have enough Landing Gear System to meet demand over a period of n days.
+* The number dj of Landing Gear System required on the jth day is known in advance.
+* To satisfy this requirement, the worker can either buy new Landing Gear System for α each, or he can have Landing Gear System repaired.
+* The repair facility provides both fast and slow delivery services.
+* In fast service, Landing Gear System are returned q days later for a cost of β per Landing Gear System.
+* In slow service, Landing Gear Systems are returned p days later at a cost of γ dollars per Landing Gear System. 
+* Naturally, p > q, and α > β > γ.
+* Suppose that the worker must plan for a period of n = 10 days, and the number of required Landing Gear System is given as:
+* set T /1*10/ ; 
+* parameter d(T) / 1 5, 2 6, 3 8, 4 7, 5 5, 6 6, 7 9, 8 8, 9 5, 10 10 / ; 
+* Finally, for this problem , we have p = 4; q = 2; α = 20, 000; β = 7, 500; and γ = 2, 500.
+* Formulate the worker’s problem as a min cost network flow problem and solve it using GAMS.
+
+* MODEL 6:
+
+SETS
+    j /1*10/
+    nodes /n1*n22/       
+    arcs(nodes,nodes);
+
+SCALARS
+    alpha /20000/
+    beta /7500/
+    gama /2500/
+    p /4/
+    q /2/;
+
+PARAMETERS
+    demand(j) / 1 5, 2 6, 3 8, 4 7, 5 5, 6 6, 7 9, 8 8, 9 5, 10 10 / ;
+
+VARIABLES
+    x(arcs)
+    Cost
+
+Positive Variable x;
+
+EQUATIONS
+    Obj
+    Balance
+    DemandMet(j);
+
+Obj..
+    Cost =e= SUM(arcs, x(arcs)*(arcs.se < 11 ? alpha : arcs.se < 21 ? BETA : gama ));
+
+Balance(nodes(n))..
+    SUM(nodes$mapped(n), x(n,nodes)) =e= SUM(nodes$mapped(n), x(nodes,n));
+
+DemandMet(j)$(ORD(j) < 21 AND ORD(j) > 10)..
+    SUM(j$p+ORD(j)-10,x('n1',j)) + x(nodes(j), 'n22') =g= demand(nodes(j));
+
+MODEL MinCostFlow /all/;
+
+SOLVE MinCostFlow USING MIP MINIMIZING Cost;
+
+* j : days
