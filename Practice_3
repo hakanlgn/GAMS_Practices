@@ -1,0 +1,104 @@
+* PRACTICE 3:
+* As part of a manufacturing process, Toes Speakers, Inc. must pair individual speakers before it can sell them as a set.
+* The performance of the two speakers depends on their frequency response.
+* To measure the quality of a pair of speakers, the company generates matching coefficients for each possible pair.
+* It calculates the matching coefficients by summing the absolute differences between the responses of the two speakers at 20 discrete frequencies.
+* Bad matches yield a large coefficient, and a good pairing produces a low coefficient.
+* A pair of speakers can only be sold if the matching coefficient for the pair is below a specified threshold, in this case 7000.
+* In order to make for consistent grading, please use the following snippet of GAMS code to create a set of frequencies for each speaker.
+
+* set freq /1*20/, speaker /1*200/; 
+* scalar maxfreqres /1500/; 
+* scalar spec specification limit /7000/; 
+* option seed = 0; 
+* parameter response(speaker,freq); 
+* response(speaker,freq) = uniform(0,maxfreqres);
+
+* Part A: Using the data generated as above, find as many pairs of speakers as possible whose matching coefficients do not exceed the specification limit.
+
+* Part B: A bad frequency is a frequency where the response differs by more than 500 in absolute value.
+* The CTE (Chief Toes Engineer) has added a new requirement that speakers may not be sold as a pair if they have more than 3 (out of 20) bad frequencies.
+* Write a GAMS model to determine the maximum number of pairs of speakers that can be sold in this case.
+* The total matching coefficient constraint should also be enforced on this problem.
+
+
+* MODEL 3A:
+
+SET
+    freq /1*20/,
+    speaker /1*200/,
+    i /1*200/,
+    j /1*200/;
+
+SCALAR
+    maxfreqres /1500/,
+    spec /7000/;
+
+OPTION SEED = 0;
+
+PARAMETER response(speaker, freq);
+response(speaker,freq) = UNIFORM(0,maxfreqres);
+
+BINARY VARIABLE x(i,j);
+VARIABLE
+	totalPairs;
+
+EQUATIONS
+    defTotalPairs,
+    matchingConstraint(i,j);
+
+defTotalPairs.. 
+    totalPairs =e= SUM((i,j)$(ORD(i) < ORD(j)), x(i,j));
+
+matchingConstraint(i,j)$(ORD(i) < ORD(j))..
+    SUM(freq, ABS(response(i,freq) - response(j,freq))) =l= spec * x(i,j);
+
+MODEL SpeakerPairing /all/;
+SOLVE SpeakerPairing USING MIP MAXIMIZING totalPairs;
+
+
+* MODEL 3B:
+
+SET
+    freq /1*20/,
+    speaker /1*200/;
+    
+SCALAR
+    max_freq /1500/,
+    spec /7000/,
+    bad_freq_threshold /500/,
+    bad_freq_limit /3/;
+
+ALIAS (speaker,i,j);
+
+PARAMETER response(speaker, freq);
+response(speaker,freq) = UNIFORM(0,max_freq);
+
+BINARY VARIABLES
+    x(i,j);
+    
+VARIABLES
+    totalPairs;
+
+EQUATIONS
+    defTotalPairs,
+    spec_limit(i,j),
+    one_pair_per_speaker(i),
+    bad_freq_count(i,j);
+
+defTotalPairs.. 
+    totalPairs =e= SUM((i,j)$(ORD(i) < ORD(j)), x(i,j));
+
+spec_limit(i,j)$(ORD(i) < ORD(j))..
+    SUM(freq,ABS(response(i,freq) - response(j,freq))) =l= spec * x(i,j);
+
+one_pair_per_speaker(i)..
+    SUM(j$(ORD(i) < ORD(j)), x(i,j)) + SUM(j$(ORD(i) > ORD(j)), x(j,i)) =l= 1;
+
+bad_freq_count(i,j)$(ORD(i) < ORD(j))..
+    SUM(freq$(ABS(response(i,freq) - response(j,freq)) > bad_freq_threshold),1) =l= bad_freq_limit * x(i,j);
+
+MODEL matching /defTotalPairs, spec_limit, one_pair_per_speaker, bad_freq_count/;
+SOLVE matching USING MIP MAXIMIZING totalPairs;
+DISPLAY x.l;
+
