@@ -1,0 +1,75 @@
+* PRACTICE 4:
+* We are appointed to help KCC caravan manufacture company for production planning.
+* From past data, the company knows that if the production rate of caravan changes, additional costs are incurred.
+* KCC estimates that the cost of increasing production is $1500 per caravan increased from one month to the next.
+* Similarly, the cost of decreasing production is $1000 per unit decreased from one month to the next. 
+* We must decide on the production rates for the next six months right now, but the demand for caravan is not known with great certainty.
+* In fact, five, equally likely, scenarios for the demand are given in Table 4.
+* Table 4:
+*                       DEMAND SCENARIOS
+*               1       2       3       4       5
+* January      400     400     500     200     600
+* February     800     900     800    1100    1000
+* March       2200    1500    2000    2500    2000
+* April       1200     800    2500    3000    1800
+* May          500     300    1200    1500    1100
+* June         500     300     500     700     100
+
+* MODEL 4:
+
+SETS
+    i /January, February, March, April, May, June/
+    j /1*5/;
+
+TABLE d(i,j)  "demand"
+            1       2       3       4       5
+January   400     400     500     200     600
+February  800     900     800    1100    1000
+March    2200    1500    2000    2500    2000
+April    1200     800    2500    3000    1800
+May       500     300    1200    1500    1100
+June      500     300     500     700     100 ;
+    
+SCALARS
+    C_up        /1500/
+    C_down      /1000/
+    C_storage   /200/
+    C_extra     /500/
+    P_initial   /400/
+    prev_prod   /400/
+    prev_inv    /200/;
+
+VARIABLES
+    P(i)
+    I(i)
+    cost
+    CostUp(i)
+    CostDown(i);
+    
+POSITIVE VARIABLE P, I, CostUp, CostDown;
+
+EQUATIONS
+    CostDef
+    InventoryBalance(i)
+    DemandMet(i,j)
+    ProductionUp(i)
+    ProductionDown(i);
+
+CostDef..
+    cost =e= SUM(i, (C_storage*MIN(800, I(i)) + C_extra*MAX(0, I(i) - 800))) +
+            SUM(i, (CostUp(i) + CostDown(i)));
+
+InventoryBalance(i)$(ORD(i) > 1)..
+    I(i-1) + P(i) =e= I(i) + SUM(j, d(i,j)/CARD(j));
+
+InventoryBalance('January')..
+    prev_inv + P_initial =e= I('January') + SUM(j, d('January',j)/CARD(j));
+
+DemandMet(i,j)..
+    P(i) + I(i-1) =g= d(i,j);
+
+ProductionUp(i)$(ORD(i) > 1)..
+    CostUp(i) =g= C_up * MAX(0, P(i) - P(i-1));
+
+ProductionUp('January')..
+    CostUp('January') =g= C
