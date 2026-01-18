@@ -1,0 +1,50 @@
+* PRACTICE 2:
+* The principal objective in animal feed mixing is to assure that an animal receives all of its formulated nutrient allowances every day.
+* Animal feed can be prepared from oats, corn, grass, and peanut hulls.
+* Table 2 shows each of ingredients with the percentage of recommended daily allowances for protein, fat, and fiber that a serving of it fulfills.
+* The current cost of oat, corn, grass and peanut hulls are $200, $150, $100, and $75, respectively.
+* Formulate and solve a linear program to find a minimum cost feed mixture that statisfies at least 60% of the daily allowance for protein and fiber while not exceeding 60% of the fat allowance.
+* Table 2:
+*                 Oat     Corn     Grass    Peanut Hulls
+* Protein (%)     60       80         55           40
+* Fat (%)         50       70         40          100
+* Fiber (%)       90       30         60           80
+
+* MODEL 2:
+
+SET i /oat, corn, grass, peanut_hulls/;
+
+Parameters
+    cost(i) /oat 200, corn 150, grass 100, peanut_hulls 75/
+    protein(i) /oat 60, corn 80, grass 55, peanut_hulls 40/
+    fat(i) /oat 50, corn 70, grass 40, peanut_hulls 100/
+    fiber(i) /oat 90, corn 30, grass 60, peanut_hulls 80/;
+
+Variables
+    x(i) amount of each feed in the mixture,
+    Z total cost;
+
+Positive Variables x;
+
+Equations
+    Objective_Function
+    Protein_Requirement
+    Fat_Constraint
+    Fiber_Requirement;
+
+Objective_Function..
+    Z =e= SUM(i, cost(i)*x(i));
+
+Protein_Requirement..
+    0.6 * SUM(i, protein(i)*x(i)) >= 60;
+
+Fat_Constraint..
+    0.6 * SUM(i, fat(i)*x(i)) <= 60;
+
+Fiber_Requirement..
+    0.6 * SUM(i, fiber(i)*x(i)) >= 60;
+
+MODEL feed /all/;
+SOLVE feed USING LP MINIMIZING Z;
+
+DISPLAY x.l, Z.l;
