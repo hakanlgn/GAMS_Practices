@@ -1,0 +1,76 @@
+* PRACTICE 5:
+* Gezgin family is planning a family trip, taking his entire family from the City A to City T.
+* They want to minimizing the total distance traveled in the road network.
+* Table 5 lists distances between adjacent Cities in the road Network.
+* (A ”–” in the table means that the locations are not adjacent on the road network).
+* Formulate and solve a (shortest-path) linear program to find the minimum distance from the City A to City T.
+* Table 5:
+*   City    B     C     D     E     F     T
+*    A     40    60    50     -     -     -
+*    B      -    10     -    70     -     -
+*    C                 20    55    40     -
+*    D                        -    50     -
+*    E                             10    60
+*    F                                   80
+
+MODEL 5:
+
+SETS
+    cities /A*T/
+    roads(cities,cities);
+
+ALIAS (i, j, cities);
+TABLE
+    range(cities,cities)
+       B   C   D   E   F   T
+    A  40  60  50  -   -   -
+    B  -   10  -   70  -   -
+    C  -   -   20  55  40  -
+    D  -   -   -   -   5   -
+    E  -   -   -   -   10  60
+    F  -   -   -   -   -   80
+    T  -   -   -   -   -   - ;
+
+range("A","B") = 40;
+range("A","C") = 60;
+range("A","D") = 50;
+range("B","C") = 10;
+range("B","E") = 70;
+range("C","D") = 20;
+range("C","E") = 55;
+range("C","F") = 40;
+range("D","E") =  5;
+range("E","F") = 10;
+range("E","T") = 60;
+range("F","T") = 80;
+
+SCALAR
+    bigM /9999/;
+
+BINARY VARIABLES
+    x(roads) ; 
+
+VARIABLE
+    Z ;               
+
+EQUATIONS
+    Objective,
+    OneEntry(cities),
+    OneExit(cities);
+
+Objective..
+    z =e= SUM(roads, range(roads)*x(roads));
+
+OneEntry(cities(j))$(j <> "A")..
+    SUM(cities(i), x(i,j)) =l= 1;
+    
+OneExit(cities(i))$(i <> "T")..
+    SUM(cities(j), x(i,j)) =l= 1;
+
+MODEL ShortestPath /all/;
+
+SOLVE ShortestPath USING MIP MINIMIZING z;
+
+* x : 1 or 0 (used or not used)
+* z : total distance
+
